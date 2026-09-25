@@ -76,6 +76,9 @@ export type SessionFileCandidate = {
   agent: AiVaultAgent
   file: FileWithMtime
   codexHome: string | null
+  // Non-default CLAUDE_CONFIG_DIR the session was found under; null/absent for
+  // the default ~/.claude, so its resume command carries no env prefix.
+  claudeConfigDir?: string | null
   antigravityHistoryPath?: string
 }
 

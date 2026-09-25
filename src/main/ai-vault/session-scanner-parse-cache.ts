@@ -50,7 +50,8 @@ function resumableStateFactoryFor(
 ): ((messages: TranscriptMessageSink) => ResumableSessionParseState) | null {
   switch (candidate.agent) {
     case 'claude':
-      return (messages) => createClaudeSessionResumeState(candidate.file, messages)
+      return (messages) =>
+        createClaudeSessionResumeState(candidate.file, candidate.claudeConfigDir, messages)
     case 'codex':
       return (messages) =>
         createCodexSessionResumeState(candidate.file, candidate.codexHome, messages)

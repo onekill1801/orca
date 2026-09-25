@@ -126,6 +126,15 @@ export function buildSkillDiscoverySources(
       ['claude'],
       'claude'
     ),
+    // ~/.claude-profile-work: HOME-isolated Claude profile used outside Orca.
+    source(
+      'home-claude-work',
+      'Claude work home',
+      pathApi.join(home, '.claude-profile-work', '.claude', 'skills'),
+      'home',
+      ['claude'],
+      'claude'
+    ),
     source(
       'codex-plugin-cache',
       'Codex plugin cache',

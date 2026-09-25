@@ -96,6 +96,10 @@ export type AiVaultSession = {
   model: string | null
   filePath: string
   codexHome: string | null
+  /** Non-default CLAUDE_CONFIG_DIR the session lives under; absent for the
+   *  default ~/.claude. Its resume command sets CLAUDE_CONFIG_DIR so the CLI
+   *  finds the transcript. */
+  claudeConfigDir?: string | null
   createdAt: string | null
   updatedAt: string | null
   modifiedAt: string

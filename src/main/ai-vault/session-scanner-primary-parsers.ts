@@ -36,6 +36,7 @@ import {
 type ParserSessionOptions = {
   executionHostId?: ExecutionHostId
   executionHostPlatform?: NodeJS.Platform | null
+  claudeConfigDir?: string | null
 }
 
 // Parse state kept resumable so the scan cache can append newly written
@@ -199,22 +200,29 @@ export async function finalizeClaudeSessionParseState(
 
 export function createClaudeSessionResumeState(
   file: FileWithMtime,
+  claudeConfigDir: string | null = null,
   messages?: TranscriptMessageSink
 ): ResumableSessionParseState {
-  return claudeResumeStateFromParseState(createClaudeSessionParseState(file, messages))
+  return claudeResumeStateFromParseState(
+    createClaudeSessionParseState(file, messages),
+    claudeConfigDir
+  )
 }
 
 function claudeResumeStateFromParseState(
-  state: ClaudeSessionParseState
+  state: ClaudeSessionParseState,
+  claudeConfigDir: string | null
 ): ResumableSessionParseState {
   return {
     consumeLine: (line) => consumeClaudeSessionLine(state, line),
     identity: () => accumulatorSessionIdentity(state.accumulator),
-    clone: () => claudeResumeStateFromParseState(cloneClaudeSessionParseState(state)),
+    clone: () =>
+      claudeResumeStateFromParseState(cloneClaudeSessionParseState(state), claudeConfigDir),
     touchFile: (file) => {
       state.accumulator.modifiedAt = file.modifiedAt
     },
-    finalize: (platform, options) => finalizeClaudeSessionParseState(state, platform, options)
+    finalize: (platform, options) =>
+      finalizeClaudeSessionParseState(state, platform, { claudeConfigDir, ...options })
   }
 }
 

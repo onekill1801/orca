@@ -19,6 +19,7 @@ export function buildAiVaultResumeCommand(args: {
   platform: NodeJS.Platform
   commandOverride?: string | null
   codexHome?: string | null
+  claudeConfigDir?: string | null
   resumeFilePath?: string | null
   shell?: AgentStartupShell
   clearEnvNames?: readonly string[]
@@ -48,6 +49,7 @@ export function buildAiVaultResumeCommand(args: {
     cwd,
     platform,
     codexHome,
+    claudeConfigDir: args.claudeConfigDir,
     shell,
     clearEnvNames: args.clearEnvNames
   })
@@ -58,6 +60,7 @@ export function buildAiVaultResumeShellCommand(args: {
   cwd: string | null
   platform: NodeJS.Platform
   codexHome?: string | null
+  claudeConfigDir?: string | null
   /** Env names the agent must not inherit. Applied as a prefix on the agent
    *  itself, never on the whole `cd … && agent` chain — `cd` is a shell builtin
    *  that `env` cannot run, and a child `cd` would not move the agent anyway. */
@@ -67,7 +70,7 @@ export function buildAiVaultResumeShellCommand(args: {
   // legacy self-contained `cmd /d /s /c` wrapper.
   shell?: AgentStartupShell
 }): string {
-  const { cwd, platform, codexHome, shell, clearEnvNames } = args
+  const { cwd, platform, codexHome, claudeConfigDir, shell, clearEnvNames } = args
 
   // Why: shell-aware commands are parsed by a known running shell, while
   // shell-less persisted commands keep the legacy self-contained cmd wrapper.
@@ -78,12 +81,14 @@ export function buildAiVaultResumeShellCommand(args: {
       resumeCommand: args.resumeCommand,
       cwd,
       codexHome: codexHome?.trim() || null,
+      claudeConfigDir: claudeConfigDir?.trim() || null,
       shell,
       clearEnvNames
     })
   }
 
   const resolvedCodexHome = codexHome?.trim() || null
+  const resolvedClaudeConfigDir = claudeConfigDir?.trim() || null
   // Why filter: the prefix and the removal name the same variable, and `env -u`
   // strips what the assignment just set, so an unfiltered list would silently
   // resume against the real home. Keeping the assignment authoritative matches
@@ -99,7 +104,11 @@ export function buildAiVaultResumeShellCommand(args: {
   // Keyed on the shell, not the platform: the shell is what picks the grammar.
   const dialect = shell ?? (platform === 'win32' ? 'cmd' : 'posix')
   const clearsOnAgent = clearNames?.length && isPosixStartupShell(dialect)
-  const resumeCommand = `${codexHomeEnvPrefix(resolvedCodexHome, platform, shell)}${
+  const resumeCommand = `${codexHomeEnvPrefix(resolvedCodexHome, platform, shell)}${claudeConfigDirEnvPrefix(
+    resolvedClaudeConfigDir,
+    platform,
+    shell
+  )}${
     clearsOnAgent ? withoutEnvCommand(clearNames, args.resumeCommand, dialect) : args.resumeCommand
   }`
   const clearPrefix =
@@ -127,14 +136,17 @@ function buildResumeShellCommandForShell(args: {
   resumeCommand: string
   cwd: string | null
   codexHome: string | null
+  claudeConfigDir: string | null
   shell: Exclude<AgentStartupShell, 'cmd'>
   clearEnvNames?: readonly string[]
 }): string {
-  const { cwd, codexHome, shell, clearEnvNames } = args
+  const { cwd, codexHome, claudeConfigDir, shell, clearEnvNames } = args
   if (isPosixStartupShell(shell)) {
     // Why: git-bash on a Windows host runs a POSIX shell, so reuse the same
     // inline-env + `cd '<cwd>'` prefix as the non-Windows path.
-    const envPrefix = codexHome ? `CODEX_HOME=${quoteStartupArg(codexHome, shell)} ` : ''
+    const envPrefix = `${codexHome ? `CODEX_HOME=${quoteStartupArg(codexHome, shell)} ` : ''}${
+      claudeConfigDir ? `CLAUDE_CONFIG_DIR=${quoteStartupArg(claudeConfigDir, shell)} ` : ''
+    }`
     // Why filter: see the twin in buildAiVaultResumeShellCommand — `env -u`
     // would strip the home the prefix just set.
     const clearNames = codexHome
@@ -160,6 +172,9 @@ function buildResumeShellCommandForShell(args: {
   }
   if (codexHome) {
     segments.push(`$env:CODEX_HOME=${quoteStartupArg(codexHome, shell)}`)
+  }
+  if (claudeConfigDir) {
+    segments.push(`$env:CLAUDE_CONFIG_DIR=${quoteStartupArg(claudeConfigDir, shell)}`)
   }
   segments.push(args.resumeCommand)
   return segments.join(separator)
@@ -247,6 +262,20 @@ function codexHomeEnvPrefix(
   }
   // fish accepts the `NAME=value cmd` prefix (3.1+), but not sh's quoting.
   return `CODEX_HOME=${quoteResumeArg(codexHome, platform, shell)} `
+}
+
+function claudeConfigDirEnvPrefix(
+  claudeConfigDir: string | null,
+  platform: NodeJS.Platform,
+  shell?: AgentStartupShell
+): string {
+  if (!claudeConfigDir) {
+    return ''
+  }
+  if (platform === 'win32') {
+    return `set ${quoteWindowsCmdArg(`CLAUDE_CONFIG_DIR=${claudeConfigDir}`)} && `
+  }
+  return `CLAUDE_CONFIG_DIR=${quoteResumeArg(claudeConfigDir, platform, shell)} `
 }
 
 /** Quotes for the live shell when one is known, else for the platform's default. */

@@ -101,7 +101,12 @@ function structuredAdoptionAccountHomeCandidates(input: {
   selectedAccountHomePath: string
 }): string[] {
   if (input.agent === 'claude') {
-    return [input.selectedAccountHomePath, join(homedir(), '.claude')]
+    // ~/.claude-profile-work: HOME-isolated Claude profile used outside Orca.
+    return [
+      input.selectedAccountHomePath,
+      join(homedir(), '.claude-profile-work', '.claude'),
+      join(homedir(), '.claude')
+    ]
   }
   return [
     input.selectedAccountHomePath,

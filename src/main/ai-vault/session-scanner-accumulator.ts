@@ -125,6 +125,7 @@ export function finalizeSession(
   platform: NodeJS.Platform,
   options: {
     codexHome?: string | null
+    claudeConfigDir?: string | null
     executionHostId?: ExecutionHostId
     executionHostPlatform?: NodeJS.Platform | null
   } = {}
@@ -154,6 +155,9 @@ export function finalizeSession(
     model: accumulator.model,
     filePath: accumulator.filePath,
     codexHome: accumulator.agent === 'codex' ? (options.codexHome ?? null) : null,
+    ...(accumulator.agent === 'claude' && options.claudeConfigDir
+      ? { claudeConfigDir: options.claudeConfigDir }
+      : {}),
     createdAt: accumulator.createdAt,
     updatedAt: accumulator.updatedAt,
     modifiedAt: accumulator.modifiedAt,
@@ -171,7 +175,8 @@ export function finalizeSession(
       resumeFilePath: accumulator.filePath,
       cwd: accumulator.cwd,
       platform,
-      codexHome: options.codexHome
+      codexHome: options.codexHome,
+      claudeConfigDir: options.claudeConfigDir
     }),
     subagent: null
   }

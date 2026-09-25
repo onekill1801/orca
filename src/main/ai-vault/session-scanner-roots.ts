@@ -1,11 +1,23 @@
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { resolveOmpSessionsDir } from './omp-session-root'
 
 // The default local roots for the two agents whose subagent transcripts are
 // read back by renderer-supplied path (Claude and OMP). Discovery scans these;
 // the IPC listers use the root enumerations below to reject arbitrary paths.
-const CLAUDE_PROJECTS_DIR = join(homedir(), '.claude', 'projects')
+export const CLAUDE_PROJECTS_DIR = join(homedir(), '.claude', 'projects')
+// ~/.claude-profile-work: HOME-isolated Claude profile used outside Orca.
+const CLAUDE_WORK_PROJECTS_DIR = join(homedir(), '.claude-profile-work', '.claude', 'projects')
+
+// The CLAUDE_CONFIG_DIR a projects root belongs to, or null for the default
+// ~/.claude so its resume command stays prefix-free (pinning the CLI's own
+// default would repoint its credential lookup — see claude-config-dir-pin).
+export function claudeConfigDirForProjectsDir(
+  projectsDir: string,
+  defaultProjectsDir: string
+): string | null {
+  return projectsDir === defaultProjectsDir ? null : dirname(projectsDir)
+}
 
 // The local host and each WSL distro's `~/.claude/projects`. Callers reading
 // Claude session files by path use these roots to reject arbitrary paths.
@@ -14,7 +26,11 @@ export function claudeProjectsRootDirs(args: {
   wslHomeDirs?: readonly string[]
 }): string[] {
   return [
-    args.claudeProjectsDir ?? CLAUDE_PROJECTS_DIR,
+    // An explicit dir pins the scan (fixtures, per-account resolution); only the
+    // default covers both recognised local homes.
+    ...(args.claudeProjectsDir
+      ? [args.claudeProjectsDir]
+      : [CLAUDE_PROJECTS_DIR, CLAUDE_WORK_PROJECTS_DIR]),
     ...(args.wslHomeDirs ?? []).map((homeDir) => join(homeDir, '.claude', 'projects'))
   ]
 }

@@ -225,3 +225,46 @@ describe('buildAiVaultResumeShellCommand env removal', () => {
     )
   })
 })
+
+describe('buildAiVaultResumeCommand with a non-default CLAUDE_CONFIG_DIR', () => {
+  it('prefixes CLAUDE_CONFIG_DIR so the CLI resumes against the session home', () => {
+    expect(
+      buildAiVaultResumeCommand({
+        agent: 'claude',
+        sessionId: 'sid',
+        cwd: '/repo/app',
+        platform: 'linux',
+        claudeConfigDir: '/home/dev/.claude-profile-work/.claude'
+      })
+    ).toBe(
+      "cd '/repo/app' && CLAUDE_CONFIG_DIR='/home/dev/.claude-profile-work/.claude' claude --resume 'sid'"
+    )
+  })
+
+  it('omits the prefix for the default home (null config dir)', () => {
+    expect(
+      buildAiVaultResumeCommand({
+        agent: 'claude',
+        sessionId: 'sid',
+        cwd: '/repo/app',
+        platform: 'linux',
+        claudeConfigDir: null
+      })
+    ).toBe("cd '/repo/app' && claude --resume 'sid'")
+  })
+
+  it('sets $env:CLAUDE_CONFIG_DIR for a PowerShell resume', () => {
+    expect(
+      buildAiVaultResumeCommand({
+        agent: 'claude',
+        sessionId: 'sid',
+        cwd: 'C:\\repo',
+        platform: 'win32',
+        shell: 'powershell',
+        claudeConfigDir: 'C:\\Users\\Dev\\.claude-work'
+      })
+    ).toBe(
+      "Set-Location -LiteralPath 'C:\\repo'; $env:CLAUDE_CONFIG_DIR='C:\\Users\\Dev\\.claude-work'; claude --resume 'sid'"
+    )
+  })
+})

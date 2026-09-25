@@ -30,7 +30,7 @@ import {
 
 type AiVaultResumeCommandSession = Pick<
   AiVaultSession,
-  'agent' | 'sessionId' | 'cwd' | 'codexHome'
+  'agent' | 'sessionId' | 'cwd' | 'codexHome' | 'claudeConfigDir'
 > &
   Partial<
     Pick<AiVaultSession, 'executionHostId' | 'executionHostPlatform' | 'resumeCommand' | 'filePath'>
@@ -191,6 +191,7 @@ function buildAiVaultResumeForWorktree(
                 platform,
                 commandOverride: startupPlan.launchConfig.agentCommand,
                 codexHome,
+                claudeConfigDir: args.session.claudeConfigDir,
                 shell: liveShell,
                 clearEnvNames
               })
@@ -199,6 +200,7 @@ function buildAiVaultResumeForWorktree(
                 cwd,
                 platform,
                 codexHome,
+                claudeConfigDir: args.session.claudeConfigDir,
                 shell: liveShell,
                 clearEnvNames
               }),
@@ -223,6 +225,7 @@ function buildAiVaultResumeForWorktree(
       platform,
       commandOverride: args.commandOverride,
       codexHome,
+      claudeConfigDir: args.session.claudeConfigDir,
       // Why: non-resumable agents queue through this fallback too, so it must
       // quote for the live Windows shell like the startup-plan branch above.
       shell: liveShell,

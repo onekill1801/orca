@@ -2,6 +2,7 @@ import { readCodexRolloutSessionMetaId } from '../codex/codex-rollout-session-me
 import { codexRolloutHardlinkIdentity, dedupeCodexRolloutAliases } from './codex-session-root-dedup'
 import { antigravityHistoryPathForBrainDir } from './session-scanner-antigravity-paths'
 import { codexHomeForSessionsDir } from './session-scanner-codex-paths'
+import { CLAUDE_PROJECTS_DIR, claudeConfigDirForProjectsDir } from './session-scanner-roots'
 import { DEFAULT_CODEX_HOME_DIR } from './session-scanner-source-discovery'
 import type {
   AiVaultScanOptions,
@@ -25,6 +26,13 @@ export async function sessionCandidatesFromDiscoveries(
               ? codexHomeForSessionsDir(
                   discovery.rootDir,
                   options.defaultCodexHomeDir ?? DEFAULT_CODEX_HOME_DIR
+                )
+              : null,
+          claudeConfigDir:
+            discovery.agent === 'claude'
+              ? claudeConfigDirForProjectsDir(
+                  discovery.rootDir,
+                  options.claudeProjectsDir ?? CLAUDE_PROJECTS_DIR
                 )
               : null,
           antigravityHistoryPath:
